@@ -1,13 +1,28 @@
 import _ from 'lodash'
 import Bluebird from 'bluebird'
 
+const Type = {
+  ON: 'ON',
+  ONCE: 'ONCE',
+}
+
+const execute = (eventListeners, ...params) => {
+  return Bluebird.map(eventListeners, (fn) => fn(...params), {
+    concurrency: 1,
+  })
+}
+
 export function executeListener(eventProp, ...params) {
   this.manager.out_debug(eventProp, ...params)
   const eventListeners = _.get(this.manager.listener, eventProp)
+  const fncs = _.map(eventListeners, 'listener')
 
-  const results = Bluebird.map(eventListeners, (fn) => fn(...params), {
-    concurrency: 1,
-  })
+  const results = execute(fncs, ...params)
+
+  _.remove(
+    this.manager.listener[eventProp],
+    ({type, listener}) => type === Type.ONCE && _.includes(fncs, listener)
+  )
 
   return results
 }
@@ -120,30 +135,38 @@ export function on_warnHandler(...params) {
   }
 }
 
-export function addListener(event, listener) {
+export function addListener(event, listener, type = Type.ON) {
   const eventProp = `on_${event}`
   const eventListeners = _.get(this.manager.listener, eventProp)
   if (!eventListeners) {
-    throw new Error(`Event [${event}] is not supported`)
+    throw new Error(`Event on [${event}] is not supported`)
   }
   if (!_.isFunction(listener)) {
-    throw new Error(`Event listener [${event}] is not a function`)
+    throw new Error(`Event listener one [${event}] is not a function`)
   }
 
-  if (!eventListeners.find((item) => item === listener)) {
-    eventListeners.push(listener)
+  if (!eventListeners.find((item) => item.listener === listener)) {
+    eventListeners.push({type, listener})
   }
 }
 
-export function removeListener(event, listener) {
+export function removeListener(event, listener, type = Type.ON) {
   const eventProp = `on_${event}`
   const eventListeners = _.get(this.manager.listener, eventProp)
   if (!eventListeners) {
-    throw new Error(`Event [${event}] is not supported`)
+    throw new Error(`Event on [${event}] is not supported`)
   }
   if (!_.isFunction(listener)) {
-    throw new Error(`Event listener [${event}] is not a function`)
+    throw new Error(`Event listener on [${event}] is not a function`)
   }
 
-  _.pull(eventListeners, listener)
+  _.remove(this.manager.listener[eventProp], {type, listener})
+}
+
+export function addOnceListener(event, listener) {
+  addListener.call(this, event, listener, Type.ONCE)
+}
+
+export function removeOnceListener(event, listener) {
+  removeListener.call(this, event, listener, Type.ONCE)
 }

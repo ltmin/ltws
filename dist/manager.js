@@ -59,7 +59,18 @@ var defaultManager = {
     on_ping: [],
     on_pong: [],
     on_message: [],
-    on_json: []
+    on_json: [],
+    once_connect: [],
+    once_connectError: [],
+    once_reconnect: [],
+    once_reconnecting: [],
+    once_disconnect: [],
+    once_disconnecting: [],
+    once_error: [],
+    once_ping: [],
+    once_pong: [],
+    once_message: [],
+    once_json: []
   },
   out: {
     debug: console.debug,
@@ -230,6 +241,8 @@ function build() {
       this.manager.out_warn = Listener.on_warnHandler.bind(this);
       this.on = this.addListener = Listener.addListener.bind(this);
       this.off = this.removeListener = Listener.removeListener.bind(this);
+      this.once = this.addOnceListener = Listener.addOnceListener.bind(this);
+      this.offOnce = this.removeOnceListener = Listener.removeOnceListener.bind(this);
       return this;
     }
 
