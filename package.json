@@ -1,5 +1,5 @@
 {
-  "name": "ltws",
+  "name": "@ltmin/ltws",
   "version": "0.0.1",
   "description": "Less Than Websocket",
   "main": "index.js",
@@ -21,7 +21,14 @@
   "files": [
     "dist"
   ],
-  "license": "ISC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ltmin/ltws.git"
+  },
+  "publishConfig": {
+    "registry":"https://npm.pkg.github.com"
+  },
   "dependencies": {
     "ajv": "^8.6.3",
     "ajv-errors": "^3.0.0",
