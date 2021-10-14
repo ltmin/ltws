@@ -234,17 +234,6 @@ function build() {
       this.manager.on_pong = Listener.on_pongListener.bind(this);
       this.manager.on_message = Listener.on_messageListener.bind(this);
       this.manager.on_json = Listener.on_jsonListener.bind(this);
-      this.manager.once_connect = Listener.once_connectListener.bind(this);
-      this.manager.once_connectError = Listener.once_connectErrorListener.bind(this);
-      this.manager.once_reconnect = Listener.once_reconnectListener.bind(this);
-      this.manager.once_reconnecting = Listener.once_reconnectingListener.bind(this);
-      this.manager.once_disconnect = Listener.once_disconnectListener.bind(this);
-      this.manager.once_disconnecting = Listener.once_disconnectingListener.bind(this);
-      this.manager.once_error = Listener.once_errorListener.bind(this);
-      this.manager.once_ping = Listener.once_pingListener.bind(this);
-      this.manager.once_pong = Listener.once_pongListener.bind(this);
-      this.manager.once_message = Listener.once_messageListener.bind(this);
-      this.manager.once_json = Listener.once_jsonListener.bind(this);
       this.manager.out_debug = Listener.on_debugHandler.bind(this);
       this.manager.out_error = Listener.on_errorHandler.bind(this);
       this.manager.out_log = Listener.on_logHandler.bind(this);
@@ -252,6 +241,8 @@ function build() {
       this.manager.out_warn = Listener.on_warnHandler.bind(this);
       this.on = this.addListener = Listener.addListener.bind(this);
       this.off = this.removeListener = Listener.removeListener.bind(this);
+      this.once = this.addOnceListener = Listener.addOnceListener.bind(this);
+      this.offOnce = this.removeOnceListener = Listener.removeOnceListener.bind(this);
       return this;
     }
 

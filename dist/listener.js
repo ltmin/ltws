@@ -7,7 +7,6 @@ exports.addListener = addListener;
 exports.addOnceListener = addOnceListener;
 exports.executeHandler = executeHandler;
 exports.executeListener = executeListener;
-exports.executeOnceListener = executeOnceListener;
 exports.on_connectErrorListener = on_connectErrorListener;
 exports.on_connectListener = on_connectListener;
 exports.on_debugHandler = on_debugHandler;
@@ -24,17 +23,6 @@ exports.on_pongListener = on_pongListener;
 exports.on_reconnectListener = on_reconnectListener;
 exports.on_reconnectingListener = on_reconnectingListener;
 exports.on_warnHandler = on_warnHandler;
-exports.once_connectErrorListener = once_connectErrorListener;
-exports.once_connectListener = once_connectListener;
-exports.once_disconnectListener = once_disconnectListener;
-exports.once_disconnectingListener = once_disconnectingListener;
-exports.once_errorListener = once_errorListener;
-exports.once_jsonListener = once_jsonListener;
-exports.once_messageListener = once_messageListener;
-exports.once_pingListener = once_pingListener;
-exports.once_pongListener = once_pongListener;
-exports.once_reconnectListener = once_reconnectListener;
-exports.once_reconnectingListener = once_reconnectingListener;
 exports.removeListener = removeListener;
 exports.removeOnceListener = removeOnceListener;
 
@@ -44,26 +32,22 @@ var _bluebird = _interopRequireDefault(require("bluebird"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var execute = eventListeners => {
+var Type = {
+  ON: 'ON',
+  ONCE: 'ONCE'
+};
+
+var execute = function execute(eventListeners) {
+  for (var _len = arguments.length, params = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    params[_key - 1] = arguments[_key];
+  }
+
   return _bluebird.default.map(eventListeners, fn => fn(...params), {
     concurrency: 1
   });
 };
 
 function executeListener(eventProp) {
-  for (var _len = arguments.length, params = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    params[_key - 1] = arguments[_key];
-  }
-
-  this.manager.out_debug(eventProp, ...params);
-
-  var eventListeners = _lodash.default.get(this.manager.listener, eventProp);
-
-  var results = execute(eventListeners);
-  return results;
-}
-
-function executeOnceListener(eventProp) {
   for (var _len2 = arguments.length, params = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
     params[_key2 - 1] = arguments[_key2];
   }
@@ -72,9 +56,17 @@ function executeOnceListener(eventProp) {
 
   var eventListeners = _lodash.default.get(this.manager.listener, eventProp);
 
-  var results = execute(eventListeners);
+  var fncs = _lodash.default.map(eventListeners, 'listener');
 
-  _lodash.default.pullAll(this.manager.listener, eventListeners);
+  var results = execute(fncs, ...params);
+
+  _lodash.default.remove(this.manager.listener[eventProp], _ref => {
+    var {
+      type,
+      listener
+    } = _ref;
+    return type === Type.ONCE && _lodash.default.includes(fncs, listener);
+  });
 
   return results;
 }
@@ -201,124 +193,14 @@ function on_jsonListener() {
   return executeListener.call(this, eventProp, ...params);
 }
 
-function once_connectListener() {
-  var eventProp = 'once_connect';
-
-  for (var _len15 = arguments.length, params = new Array(_len15), _key15 = 0; _key15 < _len15; _key15++) {
-    params[_key15] = arguments[_key15];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
-function once_connectErrorListener() {
-  var eventProp = 'once_connectError';
-
-  for (var _len16 = arguments.length, params = new Array(_len16), _key16 = 0; _key16 < _len16; _key16++) {
-    params[_key16] = arguments[_key16];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
-function once_reconnectListener() {
-  var eventProp = 'once_reconnect';
-
-  for (var _len17 = arguments.length, params = new Array(_len17), _key17 = 0; _key17 < _len17; _key17++) {
-    params[_key17] = arguments[_key17];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
-function once_reconnectingListener() {
-  var eventProp = 'once_reconnecting';
-
-  for (var _len18 = arguments.length, params = new Array(_len18), _key18 = 0; _key18 < _len18; _key18++) {
-    params[_key18] = arguments[_key18];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
-function once_disconnectingListener() {
-  var eventProp = 'once_disconnecting';
-
-  for (var _len19 = arguments.length, params = new Array(_len19), _key19 = 0; _key19 < _len19; _key19++) {
-    params[_key19] = arguments[_key19];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
-function once_disconnectListener() {
-  var eventProp = 'once_disconnect';
-
-  for (var _len20 = arguments.length, params = new Array(_len20), _key20 = 0; _key20 < _len20; _key20++) {
-    params[_key20] = arguments[_key20];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
-function once_errorListener() {
-  var eventProp = 'once_error';
-
-  for (var _len21 = arguments.length, params = new Array(_len21), _key21 = 0; _key21 < _len21; _key21++) {
-    params[_key21] = arguments[_key21];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
-function once_pingListener() {
-  var eventProp = 'once_ping';
-
-  for (var _len22 = arguments.length, params = new Array(_len22), _key22 = 0; _key22 < _len22; _key22++) {
-    params[_key22] = arguments[_key22];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
-function once_pongListener() {
-  var eventProp = 'once_pong';
-
-  for (var _len23 = arguments.length, params = new Array(_len23), _key23 = 0; _key23 < _len23; _key23++) {
-    params[_key23] = arguments[_key23];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
-function once_messageListener() {
-  var eventProp = 'once_message';
-
-  for (var _len24 = arguments.length, params = new Array(_len24), _key24 = 0; _key24 < _len24; _key24++) {
-    params[_key24] = arguments[_key24];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
-function once_jsonListener() {
-  var eventProp = 'once_json';
-
-  for (var _len25 = arguments.length, params = new Array(_len25), _key25 = 0; _key25 < _len25; _key25++) {
-    params[_key25] = arguments[_key25];
-  }
-
-  return executeOnceListener.call(this, eventProp, ...params);
-}
-
 function on_debugHandler() {
   var handlerProp = 'debug';
 
   var isEnable = _lodash.default.get(this.manager.config, ['debug', handlerProp], this.manager.config.debug);
 
   if (isEnable) {
-    for (var _len26 = arguments.length, params = new Array(_len26), _key26 = 0; _key26 < _len26; _key26++) {
-      params[_key26] = arguments[_key26];
+    for (var _len15 = arguments.length, params = new Array(_len15), _key15 = 0; _key15 < _len15; _key15++) {
+      params[_key15] = arguments[_key15];
     }
 
     return executeHandler.call(this, handlerProp, ...params);
@@ -331,8 +213,8 @@ function on_infoHandler() {
   var isEnable = _lodash.default.get(this.manager.config, ['debug', handlerProp], this.manager.config.debug);
 
   if (isEnable) {
-    for (var _len27 = arguments.length, params = new Array(_len27), _key27 = 0; _key27 < _len27; _key27++) {
-      params[_key27] = arguments[_key27];
+    for (var _len16 = arguments.length, params = new Array(_len16), _key16 = 0; _key16 < _len16; _key16++) {
+      params[_key16] = arguments[_key16];
     }
 
     return executeHandler.call(this, handlerProp, ...params);
@@ -345,8 +227,8 @@ function on_logHandler() {
   var isEnable = _lodash.default.get(this.manager.config, ['debug', handlerProp], this.manager.config.debug);
 
   if (isEnable) {
-    for (var _len28 = arguments.length, params = new Array(_len28), _key28 = 0; _key28 < _len28; _key28++) {
-      params[_key28] = arguments[_key28];
+    for (var _len17 = arguments.length, params = new Array(_len17), _key17 = 0; _key17 < _len17; _key17++) {
+      params[_key17] = arguments[_key17];
     }
 
     return executeHandler.call(this, handlerProp, ...params);
@@ -359,8 +241,8 @@ function on_errorHandler() {
   var isEnable = _lodash.default.get(this.manager.config, handlerProp, true);
 
   if (isEnable) {
-    for (var _len29 = arguments.length, params = new Array(_len29), _key29 = 0; _key29 < _len29; _key29++) {
-      params[_key29] = arguments[_key29];
+    for (var _len18 = arguments.length, params = new Array(_len18), _key18 = 0; _key18 < _len18; _key18++) {
+      params[_key18] = arguments[_key18];
     }
 
     return executeHandler.call(this, handlerProp, ...params);
@@ -373,8 +255,8 @@ function on_warnHandler() {
   var isEnable = _lodash.default.get(this.manager.config, handlerProp, true);
 
   if (isEnable) {
-    for (var _len30 = arguments.length, params = new Array(_len30), _key30 = 0; _key30 < _len30; _key30++) {
-      params[_key30] = arguments[_key30];
+    for (var _len19 = arguments.length, params = new Array(_len19), _key19 = 0; _key19 < _len19; _key19++) {
+      params[_key19] = arguments[_key19];
     }
 
     return executeHandler.call(this, handlerProp, ...params);
@@ -382,6 +264,7 @@ function on_warnHandler() {
 }
 
 function addListener(event, listener) {
+  var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : Type.ON;
   var eventProp = "on_".concat(event);
 
   var eventListeners = _lodash.default.get(this.manager.listener, eventProp);
@@ -394,12 +277,16 @@ function addListener(event, listener) {
     throw new Error("Event listener one [".concat(event, "] is not a function"));
   }
 
-  if (!eventListeners.find(item => item === listener)) {
-    eventListeners.push(listener);
+  if (!eventListeners.find(item => item.listener === listener)) {
+    eventListeners.push({
+      type,
+      listener
+    });
   }
 }
 
 function removeListener(event, listener) {
+  var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : Type.ON;
   var eventProp = "on_".concat(event);
 
   var eventListeners = _lodash.default.get(this.manager.listener, eventProp);
@@ -412,39 +299,16 @@ function removeListener(event, listener) {
     throw new Error("Event listener on [".concat(event, "] is not a function"));
   }
 
-  _lodash.default.pull(eventListeners, listener);
+  _lodash.default.remove(this.manager.listener[eventProp], {
+    type,
+    listener
+  });
 }
 
 function addOnceListener(event, listener) {
-  var eventProp = "once_".concat(event);
-
-  var eventListeners = _lodash.default.get(this.manager.listener, eventProp);
-
-  if (!eventListeners) {
-    throw new Error("Event once [".concat(event, "] is not supported"));
-  }
-
-  if (!_lodash.default.isFunction(listener)) {
-    throw new Error("Event listener once [".concat(event, "] is not a function"));
-  }
-
-  if (!eventListeners.find(item => item === listener)) {
-    eventListeners.push(listener);
-  }
+  addListener.call(this, event, listener, Type.ONCE);
 }
 
 function removeOnceListener(event, listener) {
-  var eventProp = "once_".concat(event);
-
-  var eventListeners = _lodash.default.get(this.manager.listener, eventProp);
-
-  if (!eventListeners) {
-    throw new Error("Event once [".concat(event, "] is not supported"));
-  }
-
-  if (!_lodash.default.isFunction(listener)) {
-    throw new Error("Event listener once [".concat(event, "] is not a function"));
-  }
-
-  _lodash.default.pull(eventListeners, listener);
+  removeListener.call(this, event, listener, Type.ONCE);
 }

@@ -1,7 +1,12 @@
 import _ from 'lodash'
 import Bluebird from 'bluebird'
 
-const execute = (eventListeners) => {
+const Type = {
+  ON: 'ON',
+  ONCE: 'ONCE',
+}
+
+const execute = (eventListeners, ...params) => {
   return Bluebird.map(eventListeners, (fn) => fn(...params), {
     concurrency: 1,
   })
@@ -10,19 +15,14 @@ const execute = (eventListeners) => {
 export function executeListener(eventProp, ...params) {
   this.manager.out_debug(eventProp, ...params)
   const eventListeners = _.get(this.manager.listener, eventProp)
+  const fncs = _.map(eventListeners, 'listener')
 
-  const results = execute(eventListeners)
+  const results = execute(fncs, ...params)
 
-  return results
-}
-
-export function executeOnceListener(eventProp, ...params) {
-  this.manager.out_debug(eventProp, ...params)
-  const eventListeners = _.get(this.manager.listener, eventProp)
-
-  const results = execute(eventListeners)
-
-  _.pullAll(this.manager.listener, eventListeners)
+  _.remove(
+    this.manager.listener[eventProp],
+    ({type, listener}) => type === Type.ONCE && _.includes(fncs, listener)
+  )
 
   return results
 }
@@ -77,51 +77,6 @@ export function on_messageListener(...params) {
 export function on_jsonListener(...params) {
   const eventProp = 'on_json'
   return executeListener.call(this, eventProp, ...params)
-}
-
-export function once_connectListener(...params) {
-  const eventProp = 'once_connect'
-  return executeOnceListener.call(this, eventProp, ...params)
-}
-export function once_connectErrorListener(...params) {
-  const eventProp = 'once_connectError'
-  return executeOnceListener.call(this, eventProp, ...params)
-}
-export function once_reconnectListener(...params) {
-  const eventProp = 'once_reconnect'
-  return executeOnceListener.call(this, eventProp, ...params)
-}
-export function once_reconnectingListener(...params) {
-  const eventProp = 'once_reconnecting'
-  return executeOnceListener.call(this, eventProp, ...params)
-}
-export function once_disconnectingListener(...params) {
-  const eventProp = 'once_disconnecting'
-  return executeOnceListener.call(this, eventProp, ...params)
-}
-export function once_disconnectListener(...params) {
-  const eventProp = 'once_disconnect'
-  return executeOnceListener.call(this, eventProp, ...params)
-}
-export function once_errorListener(...params) {
-  const eventProp = 'once_error'
-  return executeOnceListener.call(this, eventProp, ...params)
-}
-export function once_pingListener(...params) {
-  const eventProp = 'once_ping'
-  return executeOnceListener.call(this, eventProp, ...params)
-}
-export function once_pongListener(...params) {
-  const eventProp = 'once_pong'
-  return executeOnceListener.call(this, eventProp, ...params)
-}
-export function once_messageListener(...params) {
-  const eventProp = 'once_message'
-  return executeOnceListener.call(this, eventProp, ...params)
-}
-export function once_jsonListener(...params) {
-  const eventProp = 'once_json'
-  return executeOnceListener.call(this, eventProp, ...params)
 }
 
 export function on_debugHandler(...params) {
@@ -180,7 +135,7 @@ export function on_warnHandler(...params) {
   }
 }
 
-export function addListener(event, listener) {
+export function addListener(event, listener, type = Type.ON) {
   const eventProp = `on_${event}`
   const eventListeners = _.get(this.manager.listener, eventProp)
   if (!eventListeners) {
@@ -190,12 +145,12 @@ export function addListener(event, listener) {
     throw new Error(`Event listener one [${event}] is not a function`)
   }
 
-  if (!eventListeners.find((item) => item === listener)) {
-    eventListeners.push(listener)
+  if (!eventListeners.find((item) => item.listener === listener)) {
+    eventListeners.push({type, listener})
   }
 }
 
-export function removeListener(event, listener) {
+export function removeListener(event, listener, type = Type.ON) {
   const eventProp = `on_${event}`
   const eventListeners = _.get(this.manager.listener, eventProp)
   if (!eventListeners) {
@@ -205,33 +160,13 @@ export function removeListener(event, listener) {
     throw new Error(`Event listener on [${event}] is not a function`)
   }
 
-  _.pull(eventListeners, listener)
+  _.remove(this.manager.listener[eventProp], {type, listener})
 }
 
 export function addOnceListener(event, listener) {
-  const eventProp = `once_${event}`
-  const eventListeners = _.get(this.manager.listener, eventProp)
-  if (!eventListeners) {
-    throw new Error(`Event once [${event}] is not supported`)
-  }
-  if (!_.isFunction(listener)) {
-    throw new Error(`Event listener once [${event}] is not a function`)
-  }
-
-  if (!eventListeners.find((item) => item === listener)) {
-    eventListeners.push(listener)
-  }
+  addListener.call(this, event, listener, Type.ONCE)
 }
 
 export function removeOnceListener(event, listener) {
-  const eventProp = `once_${event}`
-  const eventListeners = _.get(this.manager.listener, eventProp)
-  if (!eventListeners) {
-    throw new Error(`Event once [${event}] is not supported`)
-  }
-  if (!_.isFunction(listener)) {
-    throw new Error(`Event listener once [${event}] is not a function`)
-  }
-
-  _.pull(eventListeners, listener)
+  removeListener.call(this, event, listener, Type.ONCE)
 }
