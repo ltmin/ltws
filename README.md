@@ -5,6 +5,9 @@ ltws will manage ws connection that will automatically reconnect if the connecti
 ## Install
 
 ```bash
+npm i ltws
+```
+```bash
 npm install --save ltws
 ```
 
@@ -24,7 +27,7 @@ ltws.on('connect', () => {
 })
 
 ltws.on('json', (message) => {
-  console.log('on array handlers', message)
+  console.log('on json', message)
 })
 
 ltws.on('message', (message) => {
@@ -32,7 +35,7 @@ ltws.on('message', (message) => {
 })
 
 ltws.once('message', (message) => {
-  console.log('once', message)
+  console.log('once message', message)
 })
 ```
 
@@ -92,13 +95,18 @@ type Options = {
 ```typescript
 connect(url: String, options: Options)
 reconnect()
-disconnect(code?: number, reason?: string)
+disconnect()
 
 send(data: string | ArrayBuffer | Blob | ArrayBufferView)
 sendJson(data: Object)
 
-on(type: 'ping' | 'pong' | 'message' | 'json' | 'connect' | 'reconnect' | 'reconnecting' | 'disconnect' | 'disconnecting' | 'error' | 'connectError', listener: EventListener)
-off(type: 'ping' | 'pong' | 'message' | 'json' | 'connect' | 'reconnect' | 'reconnecting' | 'disconnect' | 'disconnecting' | 'error' | 'connectError', listener: EventListener)
+type Event = 'ping' | 'pong' | 'message' | 'json' | 'connect' | 'reconnect' | 'reconnecting' | 'disconnect' | 'disconnecting' | 'error' | 'connectError'
+
+on(type: Event, listener: EventListener)
+once(type: Event, listener: EventListener)
+off(type: Event, listener: EventListener)
+removeListener(type: Event, listener: EventListener)
+removeOnceListener(type: Event, listener: EventListener)
 ```
 
 ## License
