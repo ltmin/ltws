@@ -1,0 +1,15 @@
+{
+  "restartable": "rs",
+  "verbose": false,
+  "execMap": {
+    "js": "babel-node"
+  },
+  "events": {
+    "restart": "clear"
+  },
+  "watch": [
+    "src"
+  ],
+  "ext": "js json",
+  "delay": "1500"
+}

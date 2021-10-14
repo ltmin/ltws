@@ -1,0 +1,43 @@
+{
+  "name": "ltws",
+  "version": "0.0.1",
+  "description": "Less Than Websocket",
+  "main": "index.js",
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "build": "npm run clean && babel src -d dist --copy-files",
+    "client": "nodemon --max-old-space-size=4096 ./tests/client.js --config nodemon.json",
+    "server": "babel-node ./tests/server.js"
+  },
+  "keywords": [
+    "websocket",
+    "websocket-manager",
+    "websocket-reconnect"
+  ],
+  "author": "ltmin",
+  "exports": {
+    "./": "./dist/"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^8.6.3",
+    "ajv-errors": "^3.0.0",
+    "babel-plugin-module-resolver": "^4.1.0",
+    "bluebird": "^3.7.2",
+    "lodash": "^4.17.21",
+    "ws": "^8.2.3"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.15.7",
+    "@babel/core": "^7.15.8",
+    "@babel/node": "^7.15.8",
+    "@babel/plugin-proposal-class-properties": "^7.14.5",
+    "@babel/preset-env": "^7.15.8",
+    "husky": "^7.0.2",
+    "nodemon": "^2.0.13",
+    "rimraf": "^3.0.2"
+  }
+}

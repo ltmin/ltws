@@ -1,0 +1,25 @@
+{
+  "presets": [
+    [
+      "@babel/env",
+      {
+        "targets": {
+          "esmodules": true,
+          "node": "12.18.1"
+        }
+      }
+    ]
+  ],
+  "plugins": [
+    "@babel/plugin-proposal-class-properties",
+    [
+      "babel-plugin-module-resolver",
+      {
+        "root": "./src",
+        "alias": {
+          "@": "./src"
+        }
+      }
+    ]
+  ]
+}
