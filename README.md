@@ -1,1 +1,1 @@
-# ws: a webSocket library
+# ltws: a webSocket library
