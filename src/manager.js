@@ -41,6 +41,18 @@ const defaultManager = {
     on_pong: [],
     on_message: [],
     on_json: [],
+
+    once_connect: [],
+    once_connectError: [],
+    once_reconnect: [],
+    once_reconnecting: [],
+    once_disconnect: [],
+    once_disconnecting: [],
+    once_error: [],
+    once_ping: [],
+    once_pong: [],
+    once_message: [],
+    once_json: [],
   },
   out: {
     debug: console.debug,
@@ -191,6 +203,21 @@ export function build() {
       this.manager.on_pong = Listener.on_pongListener.bind(this)
       this.manager.on_message = Listener.on_messageListener.bind(this)
       this.manager.on_json = Listener.on_jsonListener.bind(this)
+
+      this.manager.once_connect = Listener.once_connectListener.bind(this)
+      this.manager.once_connectError =
+        Listener.once_connectErrorListener.bind(this)
+      this.manager.once_reconnect = Listener.once_reconnectListener.bind(this)
+      this.manager.once_reconnecting =
+        Listener.once_reconnectingListener.bind(this)
+      this.manager.once_disconnect = Listener.once_disconnectListener.bind(this)
+      this.manager.once_disconnecting =
+        Listener.once_disconnectingListener.bind(this)
+      this.manager.once_error = Listener.once_errorListener.bind(this)
+      this.manager.once_ping = Listener.once_pingListener.bind(this)
+      this.manager.once_pong = Listener.once_pongListener.bind(this)
+      this.manager.once_message = Listener.once_messageListener.bind(this)
+      this.manager.once_json = Listener.once_jsonListener.bind(this)
 
       this.manager.out_debug = Listener.on_debugHandler.bind(this)
       this.manager.out_error = Listener.on_errorHandler.bind(this)
