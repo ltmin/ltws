@@ -1,8 +1,8 @@
 {
-  "name": "@ltmin/ltws",
+  "name": "ltws",
   "version": "0.0.1",
   "description": "Less Than Websocket",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
     "clean": "rimraf ./dist",
     "build": "npm run clean && babel src -d dist --copy-files",
@@ -15,9 +15,6 @@
     "websocket-reconnect"
   ],
   "author": "ltmin",
-  "exports": {
-    "./": "./dist/"
-  },
   "files": [
     "dist"
   ],
@@ -27,7 +24,7 @@
     "url": "https://github.com/ltmin/ltws.git"
   },
   "publishConfig": {
-    "registry":"https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
     "ajv": "^8.6.3",
