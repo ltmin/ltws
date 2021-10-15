@@ -24,6 +24,7 @@ const defaultManager = {
     pingInterval: 5000,
     pingTimeout: 5000,
     connectTimeout: 5000,
+    reconnectTimeout: 5000,
     reconnectDelay: 5000,
     useReconnectEvent: false,
     autoReconnect: true,
@@ -63,84 +64,94 @@ const defaultManager = {
   },
 }
 
-export function build() {
-  const validator = ajv.compile({
-    type: 'object',
-    properties: {
-      origin: {type: 'string'},
-      config: {
-        type: 'object',
-        properties: {
-          debug: {type: 'boolean'},
-          warn: {type: 'boolean'},
-          error: {type: 'boolean'},
-          pingInterval: {type: 'integer'},
-          pingTimeout: {type: 'integer', minimum: 1000},
-          connectTimeout: {type: 'integer', minimum: 2000},
-          reconnectDelay: {type: 'integer', minimum: 1000},
-          autoReconnect: {type: 'boolean'},
-          maxRetries: {type: 'integer', minimum: 1},
-          useReconnectEvent: {type: 'boolean'},
-        },
-        errorMessage: {
-          properties: {
-            debug: '[debug] is invalid',
-            warn: '[warn] is invalid',
-            error: '[error] is invalid',
-            pingInterval: '[pingInterval] is invalid',
-            pingTimeout: '[pingTimeout] is invalid',
-            connectTimeout: '[connectTimeout] is invalid',
-            reconnectDelay: '[reconnectDelay] is invalid',
-            autoReconnect: '[autoReconnect] is invalid',
-            maxRetries: '[maxRetries] is invalid',
-            useReconnectEvent: '[useReconnectEvent] is invalid',
-          },
-        },
-      },
-    },
-    additionalProperties: false,
-    required: ['origin'],
-    errorMessage: {
+const validator = ajv.compile({
+  type: 'object',
+  properties: {
+    origin: {type: 'string'},
+    config: {
+      type: 'object',
       properties: {
-        origin: '[origin] is invalid',
+        debug: {type: 'boolean'},
+        warn: {type: 'boolean'},
+        error: {type: 'boolean'},
+        pingInterval: {type: 'integer'},
+        pingTimeout: {type: 'integer', minimum: 1000},
+        connectTimeout: {type: 'integer', minimum: 2000},
+        reconnectTimeout: {type: 'integer', minimum: 2000},
+        reconnectDelay: {type: 'integer', minimum: 1000},
+        autoReconnect: {type: 'boolean'},
+        maxRetries: {type: 'integer', minimum: 1},
+        useReconnectEvent: {type: 'boolean'},
+      },
+      errorMessage: {
+        properties: {
+          debug: '[debug] is invalid',
+          warn: '[warn] is invalid',
+          error: '[error] is invalid',
+          pingInterval: '[pingInterval] is invalid',
+          pingTimeout: '[pingTimeout] is invalid',
+          connectTimeout: '[connectTimeout] is invalid',
+          reconnectTimeout: '[reconnectTimeout] is invalid',
+          reconnectDelay: '[reconnectDelay] is invalid',
+          autoReconnect: '[autoReconnect] is invalid',
+          maxRetries: '[maxRetries] is invalid',
+          useReconnectEvent: '[useReconnectEvent] is invalid',
+        },
       },
     },
-  })
+  },
+  additionalProperties: false,
+  required: ['origin'],
+  errorMessage: {
+    properties: {
+      origin: '[origin] is invalid',
+    },
+  },
+})
 
+const beforeConnect = (manager, origin, config) => {
+  manager.params = {
+    origin,
+    config,
+  }
+
+  const result = validator(manager.params)
+  if (!result) {
+    throw new Error(_.get(validator.errors, '0.message'))
+  }
+
+  manager.origin = manager.params.origin
+  manager.config = _.merge(manager.config, manager.params.config)
+  manager.baseConfig = {}
+
+  manager.autoReconnect = _.get(manager.config, 'autoReconnect', true)
+  manager.connRetries = 0
+  manager.connReadyCount = 0
+}
+
+export function build() {
   const ltws = {
     manager: _.cloneDeep(defaultManager),
     get isConnected() {
       return _.get(this.manager.ws, 'readyState') === WebSocket.ReadyState.OPEN
     },
-    connect(origin, config) {
-      this.manager.params = {
-        origin,
-        config,
-      }
-
-      const result = validator(this.manager.params)
-      if (!result) {
-        throw new Error(_.get(validator.errors, '0.message'))
-      }
-
+    async connectAsync(origin, config) {
       if (this.isConnected) {
         return this
       }
 
-      this.manager.origin = this.manager.params.origin
-      this.manager.config = _.merge(
-        this.manager.config,
-        this.manager.params.config
-      )
-      this.manager.baseConfig = {}
+      beforeConnect(this.manager, origin, config)
 
-      this.manager.autoReconnect = _.get(
-        this.manager.config,
-        'autoReconnect',
-        true
-      )
-      this.manager.connRetries = 0
-      this.manager.connReadyCount = 0
+      await WebSocket.connectAsync(this.manager)
+
+      return this
+    },
+    connect(origin, config) {
+      if (this.isConnected) {
+        return this
+      }
+
+      beforeConnect(this.manager, origin, config)
 
       process.nextTick(() => {
         WebSocket.connect(this.manager)
@@ -149,13 +160,13 @@ export function build() {
       return this
     },
     reconnect() {
+      if (this.isConnected) {
+        return this
+      }
+
       const result = validator(this.manager.params)
       if (!result) {
         throw new Error(_.get(validator.errors, '0.message'))
-      }
-
-      if (this.isConnected) {
-        return this
       }
 
       this.manager.autoReconnect = _.get(

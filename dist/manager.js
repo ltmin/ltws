@@ -21,6 +21,10 @@ function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && 
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
 var ajv = new _ajv.default({
   allErrors: true
 });
@@ -43,6 +47,7 @@ var defaultManager = {
     pingInterval: 5000,
     pingTimeout: 5000,
     connectTimeout: 5000,
+    reconnectTimeout: 5000,
     reconnectDelay: 5000,
     useReconnectEvent: false,
     autoReconnect: true,
@@ -80,76 +85,100 @@ var defaultManager = {
     log: console.log
   }
 };
-
-function build() {
-  var validator = ajv.compile({
-    type: 'object',
-    properties: {
-      origin: {
-        type: 'string'
-      },
-      config: {
-        type: 'object',
-        properties: {
-          debug: {
-            type: 'boolean'
-          },
-          warn: {
-            type: 'boolean'
-          },
-          error: {
-            type: 'boolean'
-          },
-          pingInterval: {
-            type: 'integer'
-          },
-          pingTimeout: {
-            type: 'integer',
-            minimum: 1000
-          },
-          connectTimeout: {
-            type: 'integer',
-            minimum: 2000
-          },
-          reconnectDelay: {
-            type: 'integer',
-            minimum: 1000
-          },
-          autoReconnect: {
-            type: 'boolean'
-          },
-          maxRetries: {
-            type: 'integer',
-            minimum: 1
-          },
-          useReconnectEvent: {
-            type: 'boolean'
-          }
+var validator = ajv.compile({
+  type: 'object',
+  properties: {
+    origin: {
+      type: 'string'
+    },
+    config: {
+      type: 'object',
+      properties: {
+        debug: {
+          type: 'boolean'
         },
-        errorMessage: {
-          properties: {
-            debug: '[debug] is invalid',
-            warn: '[warn] is invalid',
-            error: '[error] is invalid',
-            pingInterval: '[pingInterval] is invalid',
-            pingTimeout: '[pingTimeout] is invalid',
-            connectTimeout: '[connectTimeout] is invalid',
-            reconnectDelay: '[reconnectDelay] is invalid',
-            autoReconnect: '[autoReconnect] is invalid',
-            maxRetries: '[maxRetries] is invalid',
-            useReconnectEvent: '[useReconnectEvent] is invalid'
-          }
+        warn: {
+          type: 'boolean'
+        },
+        error: {
+          type: 'boolean'
+        },
+        pingInterval: {
+          type: 'integer'
+        },
+        pingTimeout: {
+          type: 'integer',
+          minimum: 1000
+        },
+        connectTimeout: {
+          type: 'integer',
+          minimum: 2000
+        },
+        reconnectTimeout: {
+          type: 'integer',
+          minimum: 2000
+        },
+        reconnectDelay: {
+          type: 'integer',
+          minimum: 1000
+        },
+        autoReconnect: {
+          type: 'boolean'
+        },
+        maxRetries: {
+          type: 'integer',
+          minimum: 1
+        },
+        useReconnectEvent: {
+          type: 'boolean'
+        }
+      },
+      errorMessage: {
+        properties: {
+          debug: '[debug] is invalid',
+          warn: '[warn] is invalid',
+          error: '[error] is invalid',
+          pingInterval: '[pingInterval] is invalid',
+          pingTimeout: '[pingTimeout] is invalid',
+          connectTimeout: '[connectTimeout] is invalid',
+          reconnectTimeout: '[reconnectTimeout] is invalid',
+          reconnectDelay: '[reconnectDelay] is invalid',
+          autoReconnect: '[autoReconnect] is invalid',
+          maxRetries: '[maxRetries] is invalid',
+          useReconnectEvent: '[useReconnectEvent] is invalid'
         }
       }
-    },
-    additionalProperties: false,
-    required: ['origin'],
-    errorMessage: {
-      properties: {
-        origin: '[origin] is invalid'
-      }
     }
-  });
+  },
+  additionalProperties: false,
+  required: ['origin'],
+  errorMessage: {
+    properties: {
+      origin: '[origin] is invalid'
+    }
+  }
+});
+
+var beforeConnect = (manager, origin, config) => {
+  manager.params = {
+    origin,
+    config
+  };
+  var result = validator(manager.params);
+
+  if (!result) {
+    throw new Error(_lodash.default.get(validator.errors, '0.message'));
+  }
+
+  manager.origin = manager.params.origin;
+  manager.config = _lodash.default.merge(manager.config, manager.params.config);
+  manager.baseConfig = {};
+  manager.autoReconnect = _lodash.default.get(manager.config, 'autoReconnect', true);
+  manager.connRetries = 0;
+  manager.connReadyCount = 0;
+};
+
+function build() {
   var ltws = {
     manager: _lodash.default.cloneDeep(defaultManager),
 
@@ -157,27 +186,26 @@ function build() {
       return _lodash.default.get(this.manager.ws, 'readyState') === WebSocket.ReadyState.OPEN;
     },
 
+    connectAsync(origin, config) {
+      var _this = this;
+
+      return _asyncToGenerator(function* () {
+        if (_this.isConnected) {
+          return _this;
+        }
+
+        beforeConnect(_this.manager, origin, config);
+        yield WebSocket.connectAsync(_this.manager);
+        return _this;
+      })();
+    },
+
     connect(origin, config) {
-      this.manager.params = {
-        origin,
-        config
-      };
-      var result = validator(this.manager.params);
-
-      if (!result) {
-        throw new Error(_lodash.default.get(validator.errors, '0.message'));
-      }
-
       if (this.isConnected) {
         return this;
       }
 
-      this.manager.origin = this.manager.params.origin;
-      this.manager.config = _lodash.default.merge(this.manager.config, this.manager.params.config);
-      this.manager.baseConfig = {};
-      this.manager.autoReconnect = _lodash.default.get(this.manager.config, 'autoReconnect', true);
-      this.manager.connRetries = 0;
-      this.manager.connReadyCount = 0;
+      beforeConnect(this.manager, origin, config);
       process.nextTick(() => {
         WebSocket.connect(this.manager);
       });
@@ -185,14 +213,14 @@ function build() {
     },
 
     reconnect() {
+      if (this.isConnected) {
+        return this;
+      }
+
       var result = validator(this.manager.params);
 
       if (!result) {
         throw new Error(_lodash.default.get(validator.errors, '0.message'));
-      }
-
-      if (this.isConnected) {
-        return this;
       }
 
       this.manager.autoReconnect = _lodash.default.get(this.manager.config, 'autoReconnect', true);

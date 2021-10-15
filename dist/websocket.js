@@ -3,11 +3,13 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.connect = exports.ReadyState = void 0;
+exports.connectAsync = exports.connect = exports.ReadyState = void 0;
 
 var _lodash = _interopRequireDefault(require("lodash"));
 
 var _ws = _interopRequireDefault(require("ws"));
+
+var _bluebird = _interopRequireDefault(require("bluebird"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -101,6 +103,13 @@ var onClose = manager => /*#__PURE__*/function () {
   var _ref4 = _asyncToGenerator(function* (closeCode) {
     manager.out_info('[on-close] socket closed', closeCode);
     destroy(manager, closeCode);
+
+    if (!manager.connReadyCount) {
+      manager.out_warn('[on-close] connect falied');
+      yield manager.on_disconnect('ConnectError');
+      return;
+    }
+
     var result = yield manager.on_disconnecting(closeCode);
 
     if (result === false) {
@@ -114,7 +123,7 @@ var onClose = manager => /*#__PURE__*/function () {
       setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
         manager.out_debug('[on-close] socket delay re-connect', manager.config.reconnectDelay);
         yield manager.on_reconnecting(closeCode, manager.connRetries);
-        connect(manager);
+        reconnect(manager);
       }), manager.config.reconnectDelay);
     } else {
       yield manager.on_disconnect(closeCode);
@@ -182,20 +191,7 @@ var destroy = (manager, reason) => {
   manager.destroyReason = reason;
 };
 
-var connect = manager => {
-  manager.connCreatingTimeoutScheduler = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
-    destroy(manager, 'ConnectTimeout');
-    manager.out_warn('[connect] timeout');
-
-    if (manager.connRetries < manager.config.maxRetries) {
-      manager.connRetries++;
-      yield manager.on_reconnecting('ConnectTimeout', manager.connRetries);
-      connect(manager);
-    } else {
-      yield manager.on_connectError('ConnectTimeout');
-    }
-  }), manager.config.connectTimeout);
-  manager.ws = new _ws.default(manager.origin, manager.baseConfig);
+var bindListeners = manager => {
   manager.ws.on('open', onOpen(manager));
   manager.ws.on('close', onClose(manager));
   manager.ws.on('ping', onPing(manager));
@@ -205,4 +201,61 @@ var connect = manager => {
   manager.ws.on('error', onError(manager));
 };
 
+var reconnect = manager => {
+  manager.connCreatingTimeoutScheduler = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+    destroy(manager, 'ReconnectTimeout');
+    manager.out_warn('[reconnect] timeout');
+
+    if (manager.connRetries < manager.config.maxRetries) {
+      manager.connRetries++;
+      yield manager.on_reconnecting('ReconnectTimeout', manager.connRetries);
+      connect(manager);
+    } else {
+      yield manager.on_disconnect('ReconnectTimeout');
+    }
+  }), manager.config.reconnectTimeout);
+  manager.ws = new _ws.default(manager.origin, manager.baseConfig);
+  bindListeners(manager);
+};
+
+var connect = manager => {
+  manager.connCreatingTimeoutScheduler = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+    destroy(manager, 'ConnectTimeout');
+    manager.out_warn('[connect] timeout');
+    yield manager.on_connectError('ConnectTimeout');
+  }), manager.config.connectTimeout);
+  manager.ws = new _ws.default(manager.origin, manager.baseConfig);
+  bindListeners(manager);
+};
+
 exports.connect = connect;
+
+var connectAsync = manager => {
+  return new _bluebird.default((resolve, reject) => {
+    var doResolve = () => {
+      clearTimeout(manager.connCreatingTimeoutScheduler);
+      manager.ws.off('open', doResolve);
+      manager.ws.off('close', doReject);
+      resolve();
+    };
+
+    var doReject = reason => {
+      clearTimeout(manager.connCreatingTimeoutScheduler);
+      manager.ws.off('open', doResolve);
+      manager.ws.off('close', doReject);
+      reject(reason);
+    };
+
+    manager.connCreatingTimeoutScheduler = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+      destroy(manager, 'ConnectTimeout');
+      manager.out_warn('[connect] timeout');
+      doReject('ConnectTimeout');
+    }), manager.config.connectTimeout);
+    manager.ws = new _ws.default(manager.origin, manager.baseConfig);
+    manager.ws.on('open', () => doResolve());
+    manager.ws.on('close', reason => doReject(reason));
+    bindListeners(manager);
+  });
+};
+
+exports.connectAsync = connectAsync;

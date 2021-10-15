@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import Ws from 'ws'
+import Bluebird from 'bluebird'
 
 export const ReadyState = {
   CONNECTING: Ws.CONNECTING,
@@ -77,6 +78,14 @@ const onClose = (manager) => async (closeCode) => {
 
   destroy(manager, closeCode)
 
+  if (!manager.connReadyCount) {
+    manager.out_warn('[on-close] connect falied')
+
+    await manager.on_disconnect('ConnectError')
+
+    return
+  }
+
   const result = await manager.on_disconnecting(closeCode)
   if (result === false) {
     manager.out_warn('[on-close] abort re-connect', manager.ws.readyState)
@@ -98,7 +107,7 @@ const onClose = (manager) => async (closeCode) => {
       )
 
       await manager.on_reconnecting(closeCode, manager.connRetries)
-      connect(manager)
+      reconnect(manager)
     }, manager.config.reconnectDelay)
   } else {
     await manager.on_disconnect(closeCode)
@@ -142,23 +151,7 @@ const destroy = (manager, reason) => {
   manager.destroyReason = reason
 }
 
-export const connect = (manager) => {
-  manager.connCreatingTimeoutScheduler = setTimeout(async () => {
-    destroy(manager, 'ConnectTimeout')
-
-    manager.out_warn('[connect] timeout')
-
-    if (manager.connRetries < manager.config.maxRetries) {
-      manager.connRetries++
-      await manager.on_reconnecting('ConnectTimeout', manager.connRetries)
-      connect(manager)
-    } else {
-      await manager.on_connectError('ConnectTimeout')
-    }
-  }, manager.config.connectTimeout)
-
-  manager.ws = new Ws(manager.origin, manager.baseConfig)
-
+const bindListeners = (manager) => {
   manager.ws.on('open', onOpen(manager))
   manager.ws.on('close', onClose(manager))
   manager.ws.on('ping', onPing(manager))
@@ -166,4 +159,73 @@ export const connect = (manager) => {
   manager.ws.on('message', onMessage(manager))
   manager.ws.on('message', onJson(manager))
   manager.ws.on('error', onError(manager))
+}
+
+const reconnect = (manager) => {
+  manager.connCreatingTimeoutScheduler = setTimeout(async () => {
+    destroy(manager, 'ReconnectTimeout')
+
+    manager.out_warn('[reconnect] timeout')
+
+    if (manager.connRetries < manager.config.maxRetries) {
+      manager.connRetries++
+      await manager.on_reconnecting('ReconnectTimeout', manager.connRetries)
+      connect(manager)
+    } else {
+      await manager.on_disconnect('ReconnectTimeout')
+    }
+  }, manager.config.reconnectTimeout)
+
+  manager.ws = new Ws(manager.origin, manager.baseConfig)
+
+  bindListeners(manager)
+}
+
+export const connect = (manager) => {
+  manager.connCreatingTimeoutScheduler = setTimeout(async () => {
+    destroy(manager, 'ConnectTimeout')
+
+    manager.out_warn('[connect] timeout')
+
+    await manager.on_connectError('ConnectTimeout')
+  }, manager.config.connectTimeout)
+
+  manager.ws = new Ws(manager.origin, manager.baseConfig)
+
+  bindListeners(manager)
+}
+
+export const connectAsync = (manager) => {
+  return new Bluebird((resolve, reject) => {
+    const doResolve = () => {
+      clearTimeout(manager.connCreatingTimeoutScheduler)
+      manager.ws.off('open', doResolve)
+      manager.ws.off('close', doReject)
+
+      resolve()
+    }
+
+    const doReject = (reason) => {
+      clearTimeout(manager.connCreatingTimeoutScheduler)
+      manager.ws.off('open', doResolve)
+      manager.ws.off('close', doReject)
+
+      reject(reason)
+    }
+
+    manager.connCreatingTimeoutScheduler = setTimeout(async () => {
+      destroy(manager, 'ConnectTimeout')
+
+      manager.out_warn('[connect] timeout')
+
+      doReject('ConnectTimeout')
+    }, manager.config.connectTimeout)
+
+    manager.ws = new Ws(manager.origin, manager.baseConfig)
+
+    manager.ws.on('open', () => doResolve())
+    manager.ws.on('close', (reason) => doReject(reason))
+
+    bindListeners(manager)
+  })
 }

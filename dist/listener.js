@@ -283,6 +283,8 @@ function addListener(event, listener) {
       listener
     });
   }
+
+  return this;
 }
 
 function removeListener(event, listener) {
@@ -303,12 +305,16 @@ function removeListener(event, listener) {
     type,
     listener
   });
+
+  return this;
 }
 
 function addOnceListener(event, listener) {
   addListener.call(this, event, listener, Type.ONCE);
+  return this;
 }
 
 function removeOnceListener(event, listener) {
   removeListener.call(this, event, listener, Type.ONCE);
+  return this;
 }

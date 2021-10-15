@@ -1,18 +1,21 @@
 {
   "name": "ltws",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Less Than Websocket",
   "main": "./dist/index.js",
   "scripts": {
     "clean": "rimraf ./dist",
     "build": "npm run clean && babel src -d dist --copy-files",
     "client": "nodemon --max-old-space-size=4096 ./tests/client.js --config nodemon.json",
+    "clientAsync": "nodemon --max-old-space-size=4096 ./tests/client-async.js --config nodemon.json",
     "server": "babel-node ./tests/server.js"
   },
   "keywords": [
+    "ltws",
     "websocket",
     "websocket-manager",
-    "websocket-reconnect"
+    "websocket-reconnect",
+    "websocket-async"
   ],
   "author": "ltmin",
   "files": [
