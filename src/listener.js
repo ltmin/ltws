@@ -148,6 +148,8 @@ export function addListener(event, listener, type = Type.ON) {
   if (!eventListeners.find((item) => item.listener === listener)) {
     eventListeners.push({type, listener})
   }
+
+  return this
 }
 
 export function removeListener(event, listener, type = Type.ON) {
@@ -161,12 +163,18 @@ export function removeListener(event, listener, type = Type.ON) {
   }
 
   _.remove(this.manager.listener[eventProp], {type, listener})
+
+  return this
 }
 
 export function addOnceListener(event, listener) {
   addListener.call(this, event, listener, Type.ONCE)
+
+  return this
 }
 
 export function removeOnceListener(event, listener) {
   removeListener.call(this, event, listener, Type.ONCE)
+
+  return this
 }

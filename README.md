@@ -7,7 +7,9 @@ ltws will manage ws connection that will automatically reconnect if the connecti
 ```bash
 npm i ltws
 ```
+
 #### Or
+
 ```bash
 npm install --save ltws
 ```
@@ -19,25 +21,47 @@ npm install --save ltws
 ```javascript
 import ltws from 'ltws'
 
-const ltws = ltws.connect('ws://my.site.com')
+const ws = ltws.connect('ws://my.site.com')
 
-ltws.on('connect', () => {
-  ltws.send('hello!')
+ws.on('connect', () => {
+  ws.send('hello!')
 
-  ltws.sendJson({msg: 'hello!'})
+  ws.sendJson({msg: 'hello!'})
 })
 
-ltws.on('json', (message) => {
+ws.on('json', (message) => {
   console.log('on json', message)
 })
 
-ltws.on('message', (message) => {
+ws.on('message', (message) => {
   console.log('on message', message)
 })
 
-ltws.once('message', (message) => {
+ws.once('message', (message) => {
   console.log('once message', message)
 })
+```
+
+### Async usage
+
+```javascript
+import ltws from 'ltws'
+
+const ws = ltws.create()
+
+ws.on('json', (message) => {
+  console.log('on json', message)
+})
+
+ws.on('message', (message) => {
+  console.log('on message', message)
+})
+
+ws.once('message', (message) => {
+  console.log('once message', message)
+})
+
+await ws.connectAsync('ws://my.site.com')
 ```
 
 ### Options

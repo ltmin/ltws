@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import Ws from 'ws'
+import Bluebird from 'bluebird'
 
 export const ReadyState = {
   CONNECTING: Ws.CONNECTING,
@@ -150,17 +151,7 @@ const destroy = (manager, reason) => {
   manager.destroyReason = reason
 }
 
-export const connect = (manager) => {
-  manager.connCreatingTimeoutScheduler = setTimeout(async () => {
-    destroy(manager, 'ConnectTimeout')
-
-    manager.out_warn('[connect] timeout')
-
-    await manager.on_connectError('ConnectTimeout')
-  }, manager.config.connectTimeout)
-
-  manager.ws = new Ws(manager.origin, manager.baseConfig)
-
+const bindListeners = (manager) => {
   manager.ws.on('open', onOpen(manager))
   manager.ws.on('close', onClose(manager))
   manager.ws.on('ping', onPing(manager))
@@ -170,7 +161,7 @@ export const connect = (manager) => {
   manager.ws.on('error', onError(manager))
 }
 
-export const reconnect = (manager) => {
+const reconnect = (manager) => {
   manager.connCreatingTimeoutScheduler = setTimeout(async () => {
     destroy(manager, 'ReconnectTimeout')
 
@@ -187,11 +178,54 @@ export const reconnect = (manager) => {
 
   manager.ws = new Ws(manager.origin, manager.baseConfig)
 
-  manager.ws.on('open', onOpen(manager))
-  manager.ws.on('close', onClose(manager))
-  manager.ws.on('ping', onPing(manager))
-  manager.ws.on('pong', onPong(manager))
-  manager.ws.on('message', onMessage(manager))
-  manager.ws.on('message', onJson(manager))
-  manager.ws.on('error', onError(manager))
+  bindListeners(manager)
+}
+
+export const connect = (manager) => {
+  manager.connCreatingTimeoutScheduler = setTimeout(async () => {
+    destroy(manager, 'ConnectTimeout')
+
+    manager.out_warn('[connect] timeout')
+
+    await manager.on_connectError('ConnectTimeout')
+  }, manager.config.connectTimeout)
+
+  manager.ws = new Ws(manager.origin, manager.baseConfig)
+
+  bindListeners(manager)
+}
+
+export const connectAsync = (manager) => {
+  return new Bluebird((resolve, reject) => {
+    const doResolve = () => {
+      clearTimeout(manager.connCreatingTimeoutScheduler)
+      manager.ws.off('open', doResolve)
+      manager.ws.off('close', doReject)
+
+      resolve()
+    }
+
+    const doReject = (reason) => {
+      clearTimeout(manager.connCreatingTimeoutScheduler)
+      manager.ws.off('open', doResolve)
+      manager.ws.off('close', doReject)
+
+      reject(reason)
+    }
+
+    manager.connCreatingTimeoutScheduler = setTimeout(async () => {
+      destroy(manager, 'ConnectTimeout')
+
+      manager.out_warn('[connect] timeout')
+
+      doReject('ConnectTimeout')
+    }, manager.config.connectTimeout)
+
+    manager.ws = new Ws(manager.origin, manager.baseConfig)
+
+    manager.ws.on('open', () => doResolve())
+    manager.ws.on('close', (reason) => doReject(reason))
+
+    bindListeners(manager)
+  })
 }

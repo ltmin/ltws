@@ -6,6 +6,11 @@ export function connect(...params) {
     .connect(...params)
 }
 
+export function create() {
+  return build().bind()
+}
+
 export default {
+  create,
   connect,
 }
