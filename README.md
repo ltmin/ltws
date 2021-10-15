@@ -7,6 +7,7 @@ ltws will manage ws connection that will automatically reconnect if the connecti
 ```bash
 npm i ltws
 ```
+#### Or
 ```bash
 npm install --save ltws
 ```
@@ -48,7 +49,6 @@ import ltws from 'ltws'
 
 const options = {
   connectTimeout: 5000,
-  reconnectDelay: 5000,
   maxRetries: 10,
 }
 const ltws = ltws.connect('ws://my.site.com', options)
@@ -61,6 +61,7 @@ type Options = {
   pingInterval?: number
   pingTimeout?: number
   connectTimeout?: number
+  reconnectTimeout?: number
   reconnectDelay?: number
   maxRetries?: number
   useReconnectEvent?: boolean
@@ -78,6 +79,7 @@ type Options = {
   pingInterval: 5000,
   pingTimeout: 5000,
   connectTimeout: 5000,
+  reconnectTimeout: 5000,
   reconnectDelay: 5000,
   maxRetries: Number.MAX_SAFE_INTEGER,
   useReconnectEvent: false,

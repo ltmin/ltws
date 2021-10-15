@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.connect = exports.ReadyState = void 0;
+exports.reconnect = exports.connect = exports.ReadyState = void 0;
 
 var _lodash = _interopRequireDefault(require("lodash"));
 
@@ -101,6 +101,13 @@ var onClose = manager => /*#__PURE__*/function () {
   var _ref4 = _asyncToGenerator(function* (closeCode) {
     manager.out_info('[on-close] socket closed', closeCode);
     destroy(manager, closeCode);
+
+    if (!manager.connReadyCount) {
+      manager.out_warn('[on-close] connect falied');
+      yield manager.on_disconnect('ConnectError');
+      return;
+    }
+
     var result = yield manager.on_disconnecting(closeCode);
 
     if (result === false) {
@@ -114,7 +121,7 @@ var onClose = manager => /*#__PURE__*/function () {
       setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
         manager.out_debug('[on-close] socket delay re-connect', manager.config.reconnectDelay);
         yield manager.on_reconnecting(closeCode, manager.connRetries);
-        connect(manager);
+        reconnect(manager);
       }), manager.config.reconnectDelay);
     } else {
       yield manager.on_disconnect(closeCode);
@@ -186,14 +193,7 @@ var connect = manager => {
   manager.connCreatingTimeoutScheduler = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
     destroy(manager, 'ConnectTimeout');
     manager.out_warn('[connect] timeout');
-
-    if (manager.connRetries < manager.config.maxRetries) {
-      manager.connRetries++;
-      yield manager.on_reconnecting('ConnectTimeout', manager.connRetries);
-      connect(manager);
-    } else {
-      yield manager.on_connectError('ConnectTimeout');
-    }
+    yield manager.on_connectError('ConnectTimeout');
   }), manager.config.connectTimeout);
   manager.ws = new _ws.default(manager.origin, manager.baseConfig);
   manager.ws.on('open', onOpen(manager));
@@ -206,3 +206,28 @@ var connect = manager => {
 };
 
 exports.connect = connect;
+
+var reconnect = manager => {
+  manager.connCreatingTimeoutScheduler = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+    destroy(manager, 'ReconnectTimeout');
+    manager.out_warn('[reconnect] timeout');
+
+    if (manager.connRetries < manager.config.maxRetries) {
+      manager.connRetries++;
+      yield manager.on_reconnecting('ReconnectTimeout', manager.connRetries);
+      connect(manager);
+    } else {
+      yield manager.on_disconnect('ReconnectTimeout');
+    }
+  }), manager.config.reconnectTimeout);
+  manager.ws = new _ws.default(manager.origin, manager.baseConfig);
+  manager.ws.on('open', onOpen(manager));
+  manager.ws.on('close', onClose(manager));
+  manager.ws.on('ping', onPing(manager));
+  manager.ws.on('pong', onPong(manager));
+  manager.ws.on('message', onMessage(manager));
+  manager.ws.on('message', onJson(manager));
+  manager.ws.on('error', onError(manager));
+};
+
+exports.reconnect = reconnect;

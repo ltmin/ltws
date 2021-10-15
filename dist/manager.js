@@ -43,6 +43,7 @@ var defaultManager = {
     pingInterval: 5000,
     pingTimeout: 5000,
     connectTimeout: 5000,
+    reconnectTimeout: 5000,
     reconnectDelay: 5000,
     useReconnectEvent: false,
     autoReconnect: true,
@@ -111,6 +112,10 @@ function build() {
             type: 'integer',
             minimum: 2000
           },
+          reconnectTimeout: {
+            type: 'integer',
+            minimum: 2000
+          },
           reconnectDelay: {
             type: 'integer',
             minimum: 1000
@@ -134,6 +139,7 @@ function build() {
             pingInterval: '[pingInterval] is invalid',
             pingTimeout: '[pingTimeout] is invalid',
             connectTimeout: '[connectTimeout] is invalid',
+            reconnectTimeout: '[reconnectTimeout] is invalid',
             reconnectDelay: '[reconnectDelay] is invalid',
             autoReconnect: '[autoReconnect] is invalid',
             maxRetries: '[maxRetries] is invalid',

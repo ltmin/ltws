@@ -77,6 +77,14 @@ const onClose = (manager) => async (closeCode) => {
 
   destroy(manager, closeCode)
 
+  if (!manager.connReadyCount) {
+    manager.out_warn('[on-close] connect falied')
+
+    await manager.on_disconnect('ConnectError')
+
+    return
+  }
+
   const result = await manager.on_disconnecting(closeCode)
   if (result === false) {
     manager.out_warn('[on-close] abort re-connect', manager.ws.readyState)
@@ -98,7 +106,7 @@ const onClose = (manager) => async (closeCode) => {
       )
 
       await manager.on_reconnecting(closeCode, manager.connRetries)
-      connect(manager)
+      reconnect(manager)
     }, manager.config.reconnectDelay)
   } else {
     await manager.on_disconnect(closeCode)
@@ -148,14 +156,34 @@ export const connect = (manager) => {
 
     manager.out_warn('[connect] timeout')
 
+    await manager.on_connectError('ConnectTimeout')
+  }, manager.config.connectTimeout)
+
+  manager.ws = new Ws(manager.origin, manager.baseConfig)
+
+  manager.ws.on('open', onOpen(manager))
+  manager.ws.on('close', onClose(manager))
+  manager.ws.on('ping', onPing(manager))
+  manager.ws.on('pong', onPong(manager))
+  manager.ws.on('message', onMessage(manager))
+  manager.ws.on('message', onJson(manager))
+  manager.ws.on('error', onError(manager))
+}
+
+export const reconnect = (manager) => {
+  manager.connCreatingTimeoutScheduler = setTimeout(async () => {
+    destroy(manager, 'ReconnectTimeout')
+
+    manager.out_warn('[reconnect] timeout')
+
     if (manager.connRetries < manager.config.maxRetries) {
       manager.connRetries++
-      await manager.on_reconnecting('ConnectTimeout', manager.connRetries)
+      await manager.on_reconnecting('ReconnectTimeout', manager.connRetries)
       connect(manager)
     } else {
-      await manager.on_connectError('ConnectTimeout')
+      await manager.on_disconnect('ReconnectTimeout')
     }
-  }, manager.config.connectTimeout)
+  }, manager.config.reconnectTimeout)
 
   manager.ws = new Ws(manager.origin, manager.baseConfig)
 
