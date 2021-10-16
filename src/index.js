@@ -6,11 +6,11 @@ export function connect(...params) {
     .connect(...params)
 }
 
-export function create() {
+export function createInstance() {
   return build().bind()
 }
 
 export default {
-  create,
+  createInstance,
   connect,
 }
