@@ -1,6 +1,6 @@
 {
   "name": "ltws",
-  "version": "0.0.4",
+  "version": "0.0.41",
   "description": "Less Than Websocket",
   "main": "./dist/index.js",
   "scripts": {
@@ -19,7 +19,8 @@
   ],
   "author": "ltmin",
   "files": [
-    "dist"
+    "dist",
+    "index.d.ts"
   ],
   "license": "MIT",
   "repository": {

@@ -47,7 +47,7 @@ ws.once('message', (message) => {
 ```javascript
 import ltws from 'ltws'
 
-const ws = ltws.create()
+const ws = ltws.createInstance()
 
 ws.on('json', (message) => {
   console.log('on json', message)

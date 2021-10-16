@@ -2,7 +2,7 @@ import ltws from '@'
 
 // Async Connect
 ;(async function () {
-  const ws = ltws.create()
+  const ws = ltws.createInstance()
 
   ws.on('connect', () => {
     console.log('on connect async')
