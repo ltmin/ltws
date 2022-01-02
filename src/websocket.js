@@ -74,21 +74,20 @@ const onPong = (manager) => async (_raw) => {
 }
 
 const onClose = (manager) => async (closeCode) => {
+  if (!manager.connReadyCount) {
+    closeCode = closeCode || 'ConnectError'
+  }
+
   manager.out_info('[on-close] socket closed', closeCode)
 
   destroy(manager, closeCode)
 
-  if (!manager.connReadyCount) {
-    manager.out_warn('[on-close] connect falied')
-
-    await manager.on_disconnect('ConnectError')
-
-    return
-  }
-
   const result = await manager.on_disconnecting(closeCode)
   if (result === false) {
-    manager.out_warn('[on-close] abort re-connect', manager.ws.readyState)
+    manager.out_warn(
+      '[on-close] abort re-connect',
+      _.get(manager, 'ws.readyState', null)
+    )
 
     await manager.on_disconnect(closeCode)
 
@@ -97,7 +96,8 @@ const onClose = (manager) => async (closeCode) => {
 
   if (
     manager.autoReconnect &&
-    manager.connRetries < manager.config.maxRetries
+    (manager.config.maxRetries === Number.MAX_SAFE_INTEGER ||
+      manager.connRetries < manager.config.maxRetries)
   ) {
     manager.connRetries++
     setTimeout(async () => {

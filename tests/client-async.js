@@ -19,4 +19,6 @@ import ltws from '@'
   await ws
     .connectAsync('ws://127.0.0.1:19921')
     .catch((err) => console.error('[connectAsync]', err))
+
+  console.log('Next')
 })()

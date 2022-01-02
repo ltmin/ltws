@@ -140,6 +140,10 @@ export function build() {
         return this
       }
 
+      config = _.merge(config, {
+        autoReconnect: _.get(config, 'autoReconnect', false),
+      })
+
       beforeConnect(this.manager, origin, config)
 
       await WebSocket.connectAsync(this.manager)
@@ -199,7 +203,7 @@ export function build() {
       )
     },
     sendJson(message) {
-      this.send(JSON.stringify(message))
+      return this.send(JSON.stringify(message))
     },
     bind() {
       this.manager.on_connect = Listener.on_connectListener.bind(this)

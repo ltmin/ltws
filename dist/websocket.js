@@ -101,24 +101,21 @@ var onPong = manager => /*#__PURE__*/function () {
 
 var onClose = manager => /*#__PURE__*/function () {
   var _ref4 = _asyncToGenerator(function* (closeCode) {
-    manager.out_info('[on-close] socket closed', closeCode);
-    destroy(manager, closeCode);
-
     if (!manager.connReadyCount) {
-      manager.out_warn('[on-close] connect falied');
-      yield manager.on_disconnect('ConnectError');
-      return;
+      closeCode = closeCode || 'ConnectError';
     }
 
+    manager.out_info('[on-close] socket closed', closeCode);
+    destroy(manager, closeCode);
     var result = yield manager.on_disconnecting(closeCode);
 
     if (result === false) {
-      manager.out_warn('[on-close] abort re-connect', manager.ws.readyState);
+      manager.out_warn('[on-close] abort re-connect', _lodash.default.get(manager, 'ws.readyState', null));
       yield manager.on_disconnect(closeCode);
       return;
     }
 
-    if (manager.autoReconnect && manager.connRetries < manager.config.maxRetries) {
+    if (manager.autoReconnect && (manager.config.maxRetries === Number.MAX_SAFE_INTEGER || manager.connRetries < manager.config.maxRetries)) {
       manager.connRetries++;
       setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
         manager.out_debug('[on-close] socket delay re-connect', manager.config.reconnectDelay);

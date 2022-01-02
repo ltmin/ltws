@@ -194,6 +194,9 @@ function build() {
           return _this;
         }
 
+        config = _lodash.default.merge(config, {
+          autoReconnect: _lodash.default.get(config, 'autoReconnect', false)
+        });
         beforeConnect(_this.manager, origin, config);
         yield WebSocket.connectAsync(_this.manager);
         return _this;
@@ -247,7 +250,7 @@ function build() {
     },
 
     sendJson(message) {
-      this.send(JSON.stringify(message));
+      return this.send(JSON.stringify(message));
     },
 
     bind() {
