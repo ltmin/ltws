@@ -234,8 +234,9 @@ function build() {
     },
 
     disconnect() {
+      this.manager.autoReconnect = false;
+
       if (this.isConnected) {
-        this.manager.autoReconnect = false;
         this.manager.ws.close();
       }
     },
