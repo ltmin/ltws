@@ -199,16 +199,16 @@ export const connectAsync = (manager) => {
   return new Bluebird((resolve, reject) => {
     const doResolve = () => {
       clearTimeout(manager.connCreatingTimeoutScheduler)
-      manager.ws.off('open', doResolve)
-      manager.ws.off('close', doReject)
+      manager.ws && manager.ws.off('open', doResolve)
+      manager.ws && manager.ws.off('close', doReject)
 
       resolve()
     }
 
     const doReject = (reason) => {
       clearTimeout(manager.connCreatingTimeoutScheduler)
-      manager.ws.off('open', doResolve)
-      manager.ws.off('close', doReject)
+      manager.ws && manager.ws.off('open', doResolve)
+      manager.ws && manager.ws.off('close', doReject)
 
       reject(reason)
     }
