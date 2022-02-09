@@ -33,8 +33,12 @@ var onOpen = manager => /*#__PURE__*/function () {
 
     if (manager.config.pingInterval !== -1) {
       manager.pingScheduler = setInterval(() => {
+        if (manager.pingTimeoutScheduler) {
+          return;
+        }
+
         if (!manager.ws) {
-          manager.out_error('[ping-scheduler] not initialized');
+          manager.out_error('[ping-scheduler] no ws to ping');
           return;
         }
 
@@ -74,8 +78,12 @@ var onPing = manager => /*#__PURE__*/function () {
     var result = yield manager.on_ping(_raw);
 
     if (result !== false) {
-      manager.out_debug('[on-ping] sending pong');
-      manager.ws.pong();
+      if (manager.ws) {
+        manager.out_debug('[on-ping] sending pong');
+        manager.ws.pong();
+      } else {
+        manager.out_debug('[on-ping] no ws to pong');
+      }
     } else {
       manager.out_debug('[on-ping] sending ignored');
     }
@@ -99,8 +107,32 @@ var onPong = manager => /*#__PURE__*/function () {
   };
 }();
 
+var checkAndReconnect = /*#__PURE__*/function () {
+  var _ref4 = _asyncToGenerator(function* (manager, closeCode) {
+    if (manager.reconnectScheluder) {
+      return;
+    }
+
+    if (manager.autoReconnect && (manager.config.maxRetries === Number.MAX_SAFE_INTEGER || manager.connRetries < manager.config.maxRetries)) {
+      manager.connRetries++;
+      manager.reconnectScheluder = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+        manager.reconnectScheluder = null;
+        manager.out_debug('[on-close] socket delay re-connect', manager.config.reconnectDelay);
+        yield manager.on_reconnecting(closeCode, manager.connRetries);
+        reconnect(manager);
+      }), manager.config.reconnectDelay);
+    } else {
+      yield manager.on_disconnect(closeCode);
+    }
+  });
+
+  return function checkAndReconnect(_x4, _x5) {
+    return _ref4.apply(this, arguments);
+  };
+}();
+
 var onClose = manager => /*#__PURE__*/function () {
-  var _ref4 = _asyncToGenerator(function* (closeCode) {
+  var _ref6 = _asyncToGenerator(function* (closeCode) {
     if (!manager.connReadyCount) {
       closeCode = closeCode || 'ConnectError';
     }
@@ -115,36 +147,27 @@ var onClose = manager => /*#__PURE__*/function () {
       return;
     }
 
-    if (manager.autoReconnect && (manager.config.maxRetries === Number.MAX_SAFE_INTEGER || manager.connRetries < manager.config.maxRetries)) {
-      manager.connRetries++;
-      setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
-        manager.out_debug('[on-close] socket delay re-connect', manager.config.reconnectDelay);
-        yield manager.on_reconnecting(closeCode, manager.connRetries);
-        reconnect(manager);
-      }), manager.config.reconnectDelay);
-    } else {
-      yield manager.on_disconnect(closeCode);
-    }
+    yield checkAndReconnect(manager, closeCode);
   });
 
-  return function (_x4) {
-    return _ref4.apply(this, arguments);
-  };
-}();
-
-var onMessage = manager => /*#__PURE__*/function () {
-  var _ref6 = _asyncToGenerator(function* (_raw) {
-    manager.out_debug('[on-message] received');
-    yield manager.on_message(_raw);
-  });
-
-  return function (_x5) {
+  return function (_x6) {
     return _ref6.apply(this, arguments);
   };
 }();
 
-var onJson = manager => /*#__PURE__*/function () {
+var onMessage = manager => /*#__PURE__*/function () {
   var _ref7 = _asyncToGenerator(function* (_raw) {
+    manager.out_debug('[on-message] received');
+    yield manager.on_message(_raw);
+  });
+
+  return function (_x7) {
+    return _ref7.apply(this, arguments);
+  };
+}();
+
+var onJson = manager => /*#__PURE__*/function () {
+  var _ref8 = _asyncToGenerator(function* (_raw) {
     manager.out_debug('[on-json] received');
 
     try {
@@ -155,19 +178,19 @@ var onJson = manager => /*#__PURE__*/function () {
     }
   });
 
-  return function (_x6) {
-    return _ref7.apply(this, arguments);
+  return function (_x8) {
+    return _ref8.apply(this, arguments);
   };
 }();
 
 var onError = manager => /*#__PURE__*/function () {
-  var _ref8 = _asyncToGenerator(function* (_raw) {
+  var _ref9 = _asyncToGenerator(function* (_raw) {
     manager.out_debug('[on-error] error thrown', _raw);
     yield manager.on_error(_raw);
   });
 
-  return function (_x7) {
-    return _ref8.apply(this, arguments);
+  return function (_x9) {
+    return _ref9.apply(this, arguments);
   };
 }();
 
@@ -177,12 +200,13 @@ var destroy = (manager, reason) => {
   clearTimeout(manager.connCreatingTimeoutScheduler);
   manager.pingTimeoutScheduler = null;
 
+  if (manager.ws) {
+    manager.ws._events = {};
+  }
+
   if (manager.ws && manager.ws.readyState === _ws.default.OPEN) {
     manager.ws.close();
-  } // if (manager.ws) {
-  //   manager.ws._events = {}
-  // }
-
+  }
 
   manager.ws = null;
   manager.destroyReason = reason;
@@ -220,6 +244,7 @@ var connect = manager => {
     destroy(manager, 'ConnectTimeout');
     manager.out_warn('[connect] timeout');
     yield manager.on_connectError('ConnectTimeout');
+    checkAndReconnect(manager, 'ConnectTimeout');
   }), manager.config.connectTimeout);
   manager.ws = new _ws.default(manager.origin, manager.baseConfig);
   bindListeners(manager);

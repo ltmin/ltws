@@ -17,8 +17,12 @@ const onOpen = (manager) => async (_raw) => {
 
   if (manager.config.pingInterval !== -1) {
     manager.pingScheduler = setInterval(() => {
+      if (manager.pingTimeoutScheduler) {
+        return
+      }
+
       if (!manager.ws) {
-        manager.out_error('[ping-scheduler] not initialized')
+        manager.out_error('[ping-scheduler] no ws to ping')
 
         return
       }
@@ -59,8 +63,12 @@ const onPing = (manager) => async (_raw) => {
   manager.out_debug('[on-ping] received')
   const result = await manager.on_ping(_raw)
   if (result !== false) {
-    manager.out_debug('[on-ping] sending pong')
-    manager.ws.pong()
+    if (manager.ws) {
+      manager.out_debug('[on-ping] sending pong')
+      manager.ws.pong()
+    } else {
+      manager.out_debug('[on-ping] no ws to pong')
+    }
   } else {
     manager.out_debug('[on-ping] sending ignored')
   }
@@ -71,6 +79,32 @@ const onPong = (manager) => async (_raw) => {
   clearTimeout(manager.pingTimeoutScheduler)
   manager.pingTimeoutScheduler = null
   await manager.on_pong(_raw)
+}
+
+const checkAndReconnect = async (manager, closeCode) => {
+  if (manager.reconnectScheluder) {
+    return
+  }
+
+  if (
+    manager.autoReconnect &&
+    (manager.config.maxRetries === Number.MAX_SAFE_INTEGER ||
+      manager.connRetries < manager.config.maxRetries)
+  ) {
+    manager.connRetries++
+    manager.reconnectScheluder = setTimeout(async () => {
+      manager.reconnectScheluder = null
+      manager.out_debug(
+        '[on-close] socket delay re-connect',
+        manager.config.reconnectDelay
+      )
+
+      await manager.on_reconnecting(closeCode, manager.connRetries)
+      reconnect(manager)
+    }, manager.config.reconnectDelay)
+  } else {
+    await manager.on_disconnect(closeCode)
+  }
 }
 
 const onClose = (manager) => async (closeCode) => {
@@ -94,24 +128,7 @@ const onClose = (manager) => async (closeCode) => {
     return
   }
 
-  if (
-    manager.autoReconnect &&
-    (manager.config.maxRetries === Number.MAX_SAFE_INTEGER ||
-      manager.connRetries < manager.config.maxRetries)
-  ) {
-    manager.connRetries++
-    setTimeout(async () => {
-      manager.out_debug(
-        '[on-close] socket delay re-connect',
-        manager.config.reconnectDelay
-      )
-
-      await manager.on_reconnecting(closeCode, manager.connRetries)
-      reconnect(manager)
-    }, manager.config.reconnectDelay)
-  } else {
-    await manager.on_disconnect(closeCode)
-  }
+  await checkAndReconnect(manager, closeCode)
 }
 
 const onMessage = (manager) => async (_raw) => {
@@ -141,12 +158,13 @@ const destroy = (manager, reason) => {
   clearTimeout(manager.connCreatingTimeoutScheduler)
   manager.pingTimeoutScheduler = null
 
+  if (manager.ws) {
+    manager.ws._events = {}
+  }
+
   if (manager.ws && manager.ws.readyState === Ws.OPEN) {
     manager.ws.close()
   }
-  // if (manager.ws) {
-  //   manager.ws._events = {}
-  // }
   manager.ws = null
   manager.destroyReason = reason
 }
@@ -188,6 +206,8 @@ export const connect = (manager) => {
     manager.out_warn('[connect] timeout')
 
     await manager.on_connectError('ConnectTimeout')
+
+    checkAndReconnect(manager, 'ConnectTimeout')
   }, manager.config.connectTimeout)
 
   manager.ws = new Ws(manager.origin, manager.baseConfig)
