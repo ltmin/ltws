@@ -135,7 +135,7 @@ export function build() {
     get isConnected() {
       return _.get(this.manager.ws, 'readyState') === WebSocket.ReadyState.OPEN
     },
-    async connectAsync(origin, config) {
+    connectAsync(origin, config) {
       if (this.isConnected) {
         return this
       }
@@ -146,9 +146,7 @@ export function build() {
 
       beforeConnect(this.manager, origin, config)
 
-      await WebSocket.connectAsync(this.manager)
-
-      return this
+      return WebSocket.connectAsync(this.manager)
     },
     connect(origin, config) {
       if (this.isConnected) {

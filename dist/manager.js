@@ -21,10 +21,6 @@ function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && 
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
-
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
-
 var ajv = new _ajv.default({
   allErrors: true
 });
@@ -187,20 +183,15 @@ function build() {
     },
 
     connectAsync(origin, config) {
-      var _this = this;
+      if (this.isConnected) {
+        return this;
+      }
 
-      return _asyncToGenerator(function* () {
-        if (_this.isConnected) {
-          return _this;
-        }
-
-        config = _lodash.default.merge(config, {
-          autoReconnect: _lodash.default.get(config, 'autoReconnect', false)
-        });
-        beforeConnect(_this.manager, origin, config);
-        yield WebSocket.connectAsync(_this.manager);
-        return _this;
-      })();
+      config = _lodash.default.merge(config, {
+        autoReconnect: _lodash.default.get(config, 'autoReconnect', false)
+      });
+      beforeConnect(this.manager, origin, config);
+      return WebSocket.connectAsync(this.manager);
     },
 
     connect(origin, config) {
