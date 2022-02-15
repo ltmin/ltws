@@ -152,6 +152,12 @@ const onError = (manager) => async (_raw) => {
   await manager.on_error(_raw)
 }
 
+const onUnexpectedResponse = (manager) => async (_raw) => {
+  manager.out_debug('[on-unexpected-response] error thrown', _raw)
+
+  await manager.on_error(_raw)
+}
+
 const destroy = (manager, reason) => {
   clearInterval(manager.pingScheduler)
   clearTimeout(manager.pingTimeoutScheduler)
@@ -177,6 +183,7 @@ const bindListeners = (manager) => {
   manager.ws.on('message', onMessage(manager))
   manager.ws.on('message', onJson(manager))
   manager.ws.on('error', onError(manager))
+  manager.ws.on('unexpected-response', onUnexpectedResponse(manager))
 }
 
 const reconnect = (manager) => {

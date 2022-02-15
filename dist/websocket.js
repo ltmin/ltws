@@ -194,6 +194,17 @@ var onError = manager => /*#__PURE__*/function () {
   };
 }();
 
+var onUnexpectedResponse = manager => /*#__PURE__*/function () {
+  var _ref10 = _asyncToGenerator(function* (_raw) {
+    manager.out_debug('[on-unexpected-response] error thrown', _raw);
+    yield manager.on_error(_raw);
+  });
+
+  return function (_x10) {
+    return _ref10.apply(this, arguments);
+  };
+}();
+
 var destroy = (manager, reason) => {
   clearInterval(manager.pingScheduler);
   clearTimeout(manager.pingTimeoutScheduler);
@@ -220,6 +231,7 @@ var bindListeners = manager => {
   manager.ws.on('message', onMessage(manager));
   manager.ws.on('message', onJson(manager));
   manager.ws.on('error', onError(manager));
+  manager.ws.on('unexpected-response', onUnexpectedResponse(manager));
 };
 
 var reconnect = manager => {
