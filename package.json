@@ -1,6 +1,6 @@
 {
   "name": "ltws",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Less Than Websocket",
   "main": "./dist/index.js",
   "scripts": {

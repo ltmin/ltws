@@ -256,7 +256,7 @@ var connect = manager => {
     destroy(manager, 'ConnectTimeout');
     manager.out_warn('[connect] timeout');
     yield manager.on_connectError('ConnectTimeout');
-    checkAndReconnect(manager, 'ConnectTimeout');
+    yield checkAndReconnect(manager, 'ConnectTimeout');
   }), manager.config.connectTimeout);
   manager.ws = new _ws.default(manager.origin, manager.baseConfig);
   bindListeners(manager);

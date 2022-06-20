@@ -214,7 +214,7 @@ export const connect = (manager) => {
 
     await manager.on_connectError('ConnectTimeout')
 
-    checkAndReconnect(manager, 'ConnectTimeout')
+    await checkAndReconnect(manager, 'ConnectTimeout')
   }, manager.config.connectTimeout)
 
   manager.ws = new Ws(manager.origin, manager.baseConfig)
