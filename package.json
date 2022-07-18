@@ -1,6 +1,6 @@
 {
   "name": "ltws",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Less Than Websocket",
   "main": "./dist/index.js",
   "scripts": {
@@ -45,7 +45,7 @@
     "@babel/preset-env": "^7.15.8",
     "babel-plugin-module-resolver": "^4.1.0",
     "husky": "^7.0.2",
-    "nodemon": "^2.0.13",
+    "nodemon": "^2.0.19",
     "rimraf": "^3.0.2"
   }
 }
