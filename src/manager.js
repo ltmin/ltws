@@ -129,13 +129,15 @@ const beforeConnect = (manager, origin, config) => {
   manager.connReadyCount = 0
 }
 
-export function build() {
+export function build(options) {
+  const configOptions = _.get(options, 'config', {})
+
   const ltws = {
     manager: _.cloneDeep(defaultManager),
     get isConnected() {
       return _.get(this.manager.ws, 'readyState') === WebSocket.ReadyState.OPEN
     },
-    connectAsync(origin, config) {
+    connectAsync(origin, config = configOptions) {
       if (this.isConnected) {
         return this
       }
@@ -148,7 +150,7 @@ export function build() {
 
       return WebSocket.connectAsync(this.manager)
     },
-    connect(origin, config) {
+    connect(origin, config = configOptions) {
       if (this.isConnected) {
         return this
       }

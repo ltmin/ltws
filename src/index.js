@@ -6,8 +6,8 @@ export function connect(...params) {
     .connect(...params)
 }
 
-export function createInstance() {
-  return build().bind()
+export function createInstance(config) {
+  return build(config).bind()
 }
 
 export default {

@@ -4,23 +4,14 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.build = build;
-
 var _lodash = _interopRequireDefault(require("lodash"));
-
 var _ajv = _interopRequireDefault(require("ajv"));
-
 var _ajvErrors = _interopRequireDefault(require("ajv-errors"));
-
 var WebSocket = _interopRequireWildcard(require("./websocket"));
-
 var Listener = _interopRequireWildcard(require("./listener"));
-
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function _getRequireWildcardCache(nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
-
 function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 var ajv = new _ajv.default({
   allErrors: true
 });
@@ -154,18 +145,15 @@ var validator = ajv.compile({
     }
   }
 });
-
 var beforeConnect = (manager, origin, config) => {
   manager.params = {
     origin,
     config
   };
   var result = validator(manager.params);
-
   if (!result) {
     throw new Error(_lodash.default.get(validator.errors, '0.message'));
   }
-
   manager.origin = manager.params.origin;
   manager.config = _lodash.default.merge(manager.config, manager.params.config);
   manager.baseConfig = {};
@@ -173,78 +161,65 @@ var beforeConnect = (manager, origin, config) => {
   manager.connRetries = 0;
   manager.connReadyCount = 0;
 };
-
-function build() {
+function build(options) {
+  var configOptions = _lodash.default.get(options, 'config', {});
   var ltws = {
     manager: _lodash.default.cloneDeep(defaultManager),
-
     get isConnected() {
       return _lodash.default.get(this.manager.ws, 'readyState') === WebSocket.ReadyState.OPEN;
     },
-
-    connectAsync(origin, config) {
+    connectAsync(origin) {
+      var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : configOptions;
       if (this.isConnected) {
         return this;
       }
-
       config = _lodash.default.merge(config, {
         autoReconnect: _lodash.default.get(config, 'autoReconnect', false)
       });
       beforeConnect(this.manager, origin, config);
       return WebSocket.connectAsync(this.manager);
     },
-
-    connect(origin, config) {
+    connect(origin) {
+      var config = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : configOptions;
       if (this.isConnected) {
         return this;
       }
-
       beforeConnect(this.manager, origin, config);
       process.nextTick(() => {
         WebSocket.connect(this.manager);
       });
       return this;
     },
-
     reconnect() {
       if (this.isConnected) {
         return this;
       }
-
       var result = validator(this.manager.params);
-
       if (!result) {
         throw new Error(_lodash.default.get(validator.errors, '0.message'));
       }
-
       this.manager.autoReconnect = _lodash.default.get(this.manager.config, 'autoReconnect', true);
       this.manager.connRetries = 0;
       this.manager.connReadyCount = 0;
       WebSocket.connect(this.manager);
       return this;
     },
-
     disconnect() {
       this.manager.autoReconnect = false;
-
       if (this.isConnected) {
         this.manager.ws.close();
       }
     },
-
     send(message) {
       if (this.isConnected) {
         this.manager.ws.send(message);
         return true;
       }
-
       this.manager.out_error('[send] connection was lost before sending message');
     },
-
     sendJson(message) {
       return this.send(JSON.stringify(message));
     },
-
     bind() {
       this.manager.on_connect = Listener.on_connectListener.bind(this);
       this.manager.on_connectError = Listener.on_connectErrorListener.bind(this);
@@ -268,7 +243,6 @@ function build() {
       this.offOnce = this.removeOnceListener = Listener.removeOnceListener.bind(this);
       return this;
     }
-
   };
   return ltws;
 }
