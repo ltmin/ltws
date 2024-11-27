@@ -13,8 +13,7 @@ function connect() {
 function createInstance(config) {
   return (0, _manager.build)(config).bind();
 }
-var _default = {
+var _default = exports.default = {
   createInstance,
   connect
 };
-exports.default = _default;

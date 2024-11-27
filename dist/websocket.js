@@ -7,17 +7,16 @@ exports.connectAsync = exports.connect = exports.ReadyState = void 0;
 var _lodash = _interopRequireDefault(require("lodash"));
 var _ws = _interopRequireDefault(require("ws"));
 var _bluebird = _interopRequireDefault(require("bluebird"));
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
-var ReadyState = {
+function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+var ReadyState = exports.ReadyState = {
   CONNECTING: _ws.default.CONNECTING,
   OPEN: _ws.default.OPEN,
   CLOSING: _ws.default.CLOSING,
   CLOSED: _ws.default.CLOSED
 };
-exports.ReadyState = ReadyState;
-var onOpen = manager => /*#__PURE__*/function () {
+var onOpen = manager => (/*#__PURE__*/function () {
   var _ref = _asyncToGenerator(function* (_raw) {
     clearTimeout(manager.connCreatingTimeoutScheduler);
     manager.connReadyCount++;
@@ -55,8 +54,8 @@ var onOpen = manager => /*#__PURE__*/function () {
   return function (_x) {
     return _ref.apply(this, arguments);
   };
-}();
-var onPing = manager => /*#__PURE__*/function () {
+}());
+var onPing = manager => (/*#__PURE__*/function () {
   var _ref2 = _asyncToGenerator(function* (_raw) {
     manager.out_debug('[on-ping] received');
     var result = yield manager.on_ping(_raw);
@@ -74,8 +73,8 @@ var onPing = manager => /*#__PURE__*/function () {
   return function (_x2) {
     return _ref2.apply(this, arguments);
   };
-}();
-var onPong = manager => /*#__PURE__*/function () {
+}());
+var onPong = manager => (/*#__PURE__*/function () {
   var _ref3 = _asyncToGenerator(function* (_raw) {
     manager.out_debug('[on-pong] received');
     clearTimeout(manager.pingTimeoutScheduler);
@@ -85,7 +84,7 @@ var onPong = manager => /*#__PURE__*/function () {
   return function (_x3) {
     return _ref3.apply(this, arguments);
   };
-}();
+}());
 var checkAndReconnect = /*#__PURE__*/function () {
   var _ref4 = _asyncToGenerator(function* (manager, closeCode) {
     if (manager.reconnectScheluder) {
@@ -93,7 +92,7 @@ var checkAndReconnect = /*#__PURE__*/function () {
     }
     if (manager.autoReconnect && (manager.config.maxRetries === Number.MAX_SAFE_INTEGER || manager.connRetries < manager.config.maxRetries)) {
       manager.connRetries++;
-      manager.reconnectScheluder = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+      manager.reconnectScheluder = setTimeout(/*#__PURE__*/_asyncToGenerator(function* () {
         manager.reconnectScheluder = null;
         manager.out_debug('[on-close] socket delay re-connect', manager.config.reconnectDelay);
         yield manager.on_reconnecting(closeCode, manager.connRetries);
@@ -107,7 +106,7 @@ var checkAndReconnect = /*#__PURE__*/function () {
     return _ref4.apply(this, arguments);
   };
 }();
-var onClose = manager => /*#__PURE__*/function () {
+var onClose = manager => (/*#__PURE__*/function () {
   var _ref6 = _asyncToGenerator(function* (closeCode) {
     if (!manager.connReadyCount) {
       closeCode = closeCode || 'ConnectError';
@@ -125,8 +124,8 @@ var onClose = manager => /*#__PURE__*/function () {
   return function (_x6) {
     return _ref6.apply(this, arguments);
   };
-}();
-var onMessage = manager => /*#__PURE__*/function () {
+}());
+var onMessage = manager => (/*#__PURE__*/function () {
   var _ref7 = _asyncToGenerator(function* (_raw) {
     manager.out_debug('[on-message] received');
     yield manager.on_message(_raw);
@@ -134,8 +133,8 @@ var onMessage = manager => /*#__PURE__*/function () {
   return function (_x7) {
     return _ref7.apply(this, arguments);
   };
-}();
-var onJson = manager => /*#__PURE__*/function () {
+}());
+var onJson = manager => (/*#__PURE__*/function () {
   var _ref8 = _asyncToGenerator(function* (_raw) {
     manager.out_debug('[on-json] received');
     try {
@@ -148,8 +147,8 @@ var onJson = manager => /*#__PURE__*/function () {
   return function (_x8) {
     return _ref8.apply(this, arguments);
   };
-}();
-var onError = manager => /*#__PURE__*/function () {
+}());
+var onError = manager => (/*#__PURE__*/function () {
   var _ref9 = _asyncToGenerator(function* (_raw) {
     manager.out_debug('[on-error] error thrown', _raw);
     yield manager.on_error(_raw);
@@ -157,8 +156,8 @@ var onError = manager => /*#__PURE__*/function () {
   return function (_x9) {
     return _ref9.apply(this, arguments);
   };
-}();
-var onUnexpectedResponse = manager => /*#__PURE__*/function () {
+}());
+var onUnexpectedResponse = manager => (/*#__PURE__*/function () {
   var _ref10 = _asyncToGenerator(function* (_raw) {
     manager.out_debug('[on-unexpected-response] error thrown', _raw);
     yield manager.on_error(_raw);
@@ -166,7 +165,7 @@ var onUnexpectedResponse = manager => /*#__PURE__*/function () {
   return function (_x10) {
     return _ref10.apply(this, arguments);
   };
-}();
+}());
 var destroy = (manager, reason) => {
   clearInterval(manager.pingScheduler);
   clearTimeout(manager.pingTimeoutScheduler);
@@ -192,7 +191,7 @@ var bindListeners = manager => {
   manager.ws.on('unexpected-response', onUnexpectedResponse(manager));
 };
 var reconnect = manager => {
-  manager.connCreatingTimeoutScheduler = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+  manager.connCreatingTimeoutScheduler = setTimeout(/*#__PURE__*/_asyncToGenerator(function* () {
     destroy(manager, 'ReconnectTimeout');
     manager.out_warn('[reconnect] timeout');
     if (manager.connRetries < manager.config.maxRetries) {
@@ -207,7 +206,7 @@ var reconnect = manager => {
   bindListeners(manager);
 };
 var connect = manager => {
-  manager.connCreatingTimeoutScheduler = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+  manager.connCreatingTimeoutScheduler = setTimeout(/*#__PURE__*/_asyncToGenerator(function* () {
     destroy(manager, 'ConnectTimeout');
     manager.out_warn('[connect] timeout');
     yield manager.on_connectError('ConnectTimeout');
@@ -231,7 +230,7 @@ var connectAsync = manager => {
       manager.ws && manager.ws.off('close', doReject);
       reject(reason);
     };
-    manager.connCreatingTimeoutScheduler = setTimeout( /*#__PURE__*/_asyncToGenerator(function* () {
+    manager.connCreatingTimeoutScheduler = setTimeout(/*#__PURE__*/_asyncToGenerator(function* () {
       destroy(manager, 'ConnectTimeout');
       manager.out_warn('[connect] timeout');
       doReject('ConnectTimeout');
